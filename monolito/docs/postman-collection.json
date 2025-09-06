@@ -1,0 +1,812 @@
+{
+	"info": {
+		"_postman_id": "restaurant-poc-api-collection",
+		"name": "Restaurant PoC API",
+		"description": "Colección completa para testear la API del monolítico de restaurante",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "local-key-123",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "api_key",
+			"value": "local-key-123",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "📋 Basic Endpoints",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"healthy\");",
+									"});",
+									"",
+									"pm.test(\"Local ID is present\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.localId).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔍 Core Diagnostic Endpoints",
+			"item": [
+				{
+					"name": "Closure Status - Today",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has canClose property\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.canClose).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Response has details object\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.details).to.be.an('object');",
+									"});",
+									"",
+									"pm.test(\"Local ID matches\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.localId).to.eql(\"RESTO_001\");",
+									"});",
+									"",
+									"// Save closure status for later tests",
+									"pm.globals.set(\"canClose\", pm.response.json().canClose);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/closure-status/today",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"closure-status",
+								"today"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Closure Status - Specific Date",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/closure-status/2025-09-05",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"closure-status",
+								"2025-09-05"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sales Data - Today",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has summary\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.summary).to.be.an('object');",
+									"});",
+									"",
+									"pm.test(\"Total sales is a number\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.summary.totalSales).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/sales/today",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sales",
+								"today"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📜 Logs Endpoints",
+			"item": [
+				{
+					"name": "Closure Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/logs/closure?lines=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"closure"
+							],
+							"query": [
+								{
+									"key": "lines",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "System Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/logs/system?lines=30",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"system"
+							],
+							"query": [
+								{
+									"key": "lines",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/logs/error?lines=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"error"
+							],
+							"query": [
+								{
+									"key": "lines",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🛠️ Admin Actions",
+			"item": [
+				{
+					"name": "Process Pending Transactions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Processed transactions list exists\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.processedTransactions).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/process-pending-transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"process-pending-transactions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Force Close Shifts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Closed shifts list exists\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.closedShifts).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/force-close-shifts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"force-close-shifts"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🖥️ POS Management",
+			"item": [
+				{
+					"name": "Disable POS #3",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": false,\n    \"reason\": \"Mantenimiento programado - Testing via Postman\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/pos/3/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pos",
+								"3",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enable POS #3",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": true,\n    \"reason\": \"Mantenimiento completado - Testing via Postman\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/pos/3/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pos",
+								"3",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Disable POS #2",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": false,\n    \"reason\": \"Problema con impresora fiscal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/pos/2/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pos",
+								"2",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enable POS #2",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": true,\n    \"reason\": \"Impresora fiscal reparada\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/pos/2/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pos",
+								"2",
+								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🧪 Test Cases - Error Scenarios",
+			"item": [
+				{
+					"name": "Unauthorized Request (No Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Response has error message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Wrong API Key",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "wrong-api-key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Non-existent Business Day",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Error message mentions business day not found\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error.toLowerCase()).to.include('business day not found');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/closure-status/2023-01-01",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"closure-status",
+								"2023-01-01"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid POS ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": false,\n    \"reason\": \"Testing invalid POS\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/pos/999/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pos",
+								"999",
+								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔄 Complete Flow Test",
+			"item": [
+				{
+					"name": "1. Initial Status (Should have errors)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Cannot close initially\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.canClose).to.be.false;",
+									"});",
+									"",
+									"pm.test(\"Has errors\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.summary.totalErrors).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/closure-status/today",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"closure-status",
+								"today"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Process Transactions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/process-pending-transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"process-pending-transactions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Close Shifts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/force-close-shifts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"force-close-shifts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Final Status (Should be cleaner)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Fewer errors than initially\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    // Should have fewer errors now",
+									"    pm.expect(jsonData.summary.totalErrors).to.be.below(3);",
+									"});",
+									"",
+									"console.log('Final closure status:', pm.response.json().canClose);",
+									"console.log('Remaining errors:', pm.response.json().summary.totalErrors);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/closure-status/today",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"closure-status",
+								"today"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

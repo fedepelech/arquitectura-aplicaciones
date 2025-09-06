@@ -1,0 +1,42 @@
+services:  
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: restaurant_poc
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant_poc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+  restaurant-api:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm install && sleep 10 && npm start"
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=restaurant_poc
+      - LOCAL_ID=RESTO_001
+      - LOCAL_API_KEY=local-key-123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: on-failure
+
+volumes:
+  postgres_data:
