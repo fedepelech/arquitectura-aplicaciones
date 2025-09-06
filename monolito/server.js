@@ -386,12 +386,17 @@ app.post('/api/admin/force-close-shifts', async (req, res) => {
         [shift.id]
       );
       
+      // CORREGIDO: siempre asegúrate de usar números
+      const openingCash = parseFloat(shift.opening_cash) || 0;
       const totalSales = parseFloat(salesResult.rows[0].total) || 0;
-      const expectedCash = shift.opening_cash + totalSales;
-      
-      // Simular diferencia de caja (problema típico)
-      const actualCash = expectedCash + (Math.random() - 0.5) * 100; // ±$50 diferencia
-      
+      const expectedCash = openingCash + totalSales;
+
+      // Simular diferencia de caja numérica y redondear correctamente
+      const cashDelta = (Math.random() - 0.5) * 100; // ±$50
+      const actualCash = Math.round((expectedCash + cashDelta) * 100) / 100;
+      // Diferencia de caja calculada como float
+      const difference = Math.round((actualCash - expectedCash) * 100) / 100;
+
       // Cerrar turno
       await client.query(
         'UPDATE shifts SET status = $1, end_time = $2, expected_cash = $3 WHERE id = $4',
@@ -400,16 +405,16 @@ app.post('/api/admin/force-close-shifts', async (req, res) => {
       
       // Crear registro de cierre
       await client.query(`
-        INSERT INTO shift_close (shift_id, closing_cash, transaction_count, total_sales, closed_by)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [shift.id, actualCash, 1, totalSales, 'ADMIN_FORCE']);
+        INSERT INTO shift_close (shift_id, closing_cash, cash_difference, transaction_count, total_sales, closed_by)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [shift.id, actualCash, difference, 1, totalSales, 'ADMIN_FORCE']);
       
       closedShifts.push({
         shiftId: shift.id,
         posNumber: shift.pos_id,
         expectedCash: expectedCash,
         actualCash: actualCash,
-        difference: actualCash - expectedCash
+        difference: difference
       });
     }
     
