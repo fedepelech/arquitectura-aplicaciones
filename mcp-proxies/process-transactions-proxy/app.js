@@ -1,0 +1,15 @@
+const axios = require("axios");
+exports.handler = async () => {
+  const resp = await axios.post(
+    "http://restaurant-api:3000/api/admin/process-pending-transactions",
+    null,
+    { headers: { Authorization: `Bearer local-key-123` } }
+  );
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      tool: "process_pending_transactions",
+      data: resp.data,
+    }),
+  };
+};

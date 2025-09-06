@@ -1,0 +1,8 @@
+{
+  "name": "process-transactions-proxy",
+  "version": "1.0.0",
+  "main": "app.js",
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
