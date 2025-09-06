@@ -1,5 +1,5 @@
 # 1. Detener y limpiar los servicios y volúmenes de datos previos:
-docker-compose down -v
+docker-compose down
 
 # 2. Levantar TODOS los servicios (bd y api):
 docker-compose up -d
