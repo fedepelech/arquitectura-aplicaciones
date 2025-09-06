@@ -807,6 +807,48 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "🚪 Business Day Management",
+			"item": [
+				{
+					"name": "Get Business Day Status",
+					"request": {
+						"method": "GET",
+						"url": "{{base_url}}/api/business-day/today"
+					}
+				},
+				{
+					"name": "Close Business Day (Should Fail)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/api/business-day/close/today"
+					}
+				},
+				{
+					"name": "Force Close Business Day",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"forceClosure\": true}"
+						},
+						"url": "{{base_url}}/api/business-day/close/today"
+					}
+				}
+			]
 		}
 	]
 }

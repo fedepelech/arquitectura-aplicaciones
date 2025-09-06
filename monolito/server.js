@@ -464,6 +464,186 @@ app.put('/api/admin/pos/:posId/status', async (req, res) => {
   }
 });
 
+// =============================================================================
+// ENDPOINT DE CIERRE DE DÍA (SIMULACIÓN REAL)
+// =============================================================================
+
+// 7. CLOSE BUSINESS DAY - Intento de cierre que falla con error genérico
+app.post('/api/business-day/close/:date', async (req, res) => {
+  const { date } = req.params;
+  const { forceClosure = false } = req.body;
+  
+  try {
+    console.log(`[CLOSE-DAY] Manager attempting to close business day: ${date}`);
+    const startTime = Date.now();
+    
+    // Buscar día de negocio
+    const actualDate = date === 'today' ? new Date().toISOString().split('T')[0] : date;
+    const tldResult = await pool.query(
+      'SELECT * FROM tld WHERE business_date = $1',
+      [actualDate]
+    );
+    
+    if (tldResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Business day not found',
+        date: actualDate,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const businessDay = tldResult.rows[0];
+    
+    // Si ya está cerrado
+    if (businessDay.status === 'closed') {
+      return res.status(409).json({
+        error: 'Business day already closed',
+        closedAt: businessDay.closed_at,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // VERIFICACIONES CRÍTICAS (pero sin detallar en el error)
+    let hasBlockingIssues = false;
+    const issues = [];
+    
+    // Check 1: Transacciones sin procesar
+    const unprocessedResult = await pool.query(
+      'SELECT COUNT(*) as count FROM sales WHERE tld_id = $1 AND processed = false',
+      [businessDay.id]
+    );
+    if (parseInt(unprocessedResult.rows[0].count) > 0) {
+      hasBlockingIssues = true;
+      issues.push('unprocessed_transactions');
+    }
+    
+    // Check 2: Turnos abiertos
+    const openShiftsResult = await pool.query(
+      'SELECT COUNT(*) as count FROM shifts WHERE tld_id = $1 AND status = $2',
+      [businessDay.id, 'active']
+    );
+    if (parseInt(openShiftsResult.rows[0].count) > 0) {
+      hasBlockingIssues = true;
+      issues.push('open_shifts');
+    }
+    
+    // Check 3: Diferencias de caja excesivas
+    const cashDifferenceResult = await pool.query(`
+      SELECT COUNT(CASE WHEN ABS(sc.cash_difference) > 25.00 THEN 1 END) as excessive_differences
+      FROM shift_close sc
+      JOIN shifts s ON s.id = sc.shift_id
+      WHERE s.tld_id = $1
+    `, [businessDay.id]);
+    if (parseInt(cashDifferenceResult.rows[0].excessive_differences) > 0) {
+      hasBlockingIssues = true;
+      issues.push('cash_differences');
+    }
+    
+    // Check 4: POS habilitadas sin turnos
+    const posWithoutShiftsResult = await pool.query(`
+      SELECT COUNT(*) as count
+      FROM tld_list_pos tlp 
+      LEFT JOIN shifts s ON s.pos_id = tlp.id 
+      WHERE tlp.tld_id = $1 AND tlp.is_enabled = true AND s.id IS NULL
+    `, [businessDay.id]);
+    if (parseInt(posWithoutShiftsResult.rows[0].count) > 0) {
+      hasBlockingIssues = true;
+      issues.push('pos_without_shifts');
+    }
+    
+    // Si hay problemas y no es forzado
+    if (hasBlockingIssues && !forceClosure) {
+      const responseTime = Date.now() - startTime;
+      
+      console.log(`[CLOSE-DAY] Closure blocked due to issues:`, issues);
+      
+      // ERROR GENÉRICO - Como lo haría un sistema real
+      return res.status(422).json({
+        error: 'Cannot close business day',
+        message: 'Day closure failed due to pending operations. Please review system status and try again.',
+        errorCode: 'CLOSURE_BLOCKED',
+        canRetry: true,
+        timestamp: new Date().toISOString(),
+        processingTime: responseTime,
+        
+        // Información MUY limitada (como sistema real)
+        hint: 'Check pending transactions, open shifts, and cash balances',
+        supportContact: 'Contact system administrator for detailed analysis'
+      });
+    }
+    
+    // Si no hay problemas O es forzado, cerrar exitosamente
+    await pool.query(
+      'UPDATE tld SET status = $1, closed_at = $2 WHERE id = $3',
+      ['closed', new Date(), businessDay.id]
+    );
+    
+    const responseTime = Date.now() - startTime;
+    
+    console.log(`[CLOSE-DAY] Business day closed successfully in ${responseTime}ms`);
+    
+    res.json({
+      success: true,
+      message: 'Business day closed successfully',
+      businessDate: actualDate,
+      closedAt: new Date().toISOString(),
+      forced: forceClosure,
+      processingTime: responseTime,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[CLOSE-DAY] Error:', error);
+    res.status(500).json({
+      error: 'Internal system error',
+      message: 'An unexpected error occurred while closing the business day. Please contact support.',
+      errorCode: 'INTERNAL_ERROR',
+      timestamp: new Date().toISOString(),
+      supportContact: 'support@restaurant-system.com'
+    });
+  }
+});
+
+// 8. GET BUSINESS DAY STATUS - Para que el gerente vea el estado actual
+app.get('/api/business-day/:date', async (req, res) => {
+  const { date } = req.params;
+  
+  try {
+    const actualDate = date === 'today' ? new Date().toISOString().split('T')[0] : date;
+    
+    const tldResult = await pool.query(
+      'SELECT * FROM tld WHERE business_date = $1',
+      [actualDate]
+    );
+    
+    if (tldResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Business day not found',
+        date: actualDate
+      });
+    }
+    
+    const businessDay = tldResult.rows[0];
+    
+    res.json({
+      localId: process.env.LOCAL_ID || 'RESTO_001',
+      businessDate: businessDay.business_date,
+      status: businessDay.status,
+      createdAt: businessDay.created_at,
+      closedAt: businessDay.closed_at,
+      canAttemptClosure: businessDay.status === 'open',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[BUSINESS-DAY] Error:', error);
+    res.status(500).json({
+      error: 'Database error',
+      message: error.message
+    });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
