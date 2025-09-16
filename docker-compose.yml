@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  monolito:
+    build:
+      context: ./monolito
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=restaurant_poc
+      - DB_HOST=db
+      - DB_PORT=5432
+      - LOCAL_API_KEY=local-key-123
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: ./mcp-proxies
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - MONOLITO_URL=http://monolito:3000
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      - monolito
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    build:
+      context: ./ollama
+      dockerfile: Dockerfile
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./monolito/restaurant-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_MCP_URL=http://mcp-server:4000/mcp
+    depends_on:
+      - mcp-server
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: restaurant_poc
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  db_data:

@@ -36,17 +36,39 @@ const ChatBot = ({ onClose, onRefreshData }) => {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual MCP integration later)
-    setTimeout(() => {
+    try {
+      // Send user input to MCP server LLM endpoint
+      const response = await fetch('http://localhost:4000/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tool: 'llm',
+          payload: {
+            prompt: userMessage.text,
+            model: 'llama2' // or other model name
+          }
+        })
+      });
+      const data = await response.json();
+      const botText = data?.data?.response || data?.data?.message || 'No response from LLM.';
       const botMessage = {
         id: Date.now() + 1,
-        text: generateBotResponse(inputText),
+        text: botText,
         sender: 'bot',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 2000);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        id: Date.now() + 2,
+        text: 'Error al conectar con el servidor MCP: ' + err.message,
+        sender: 'bot',
+        timestamp: new Date()
+      }]);
+    }
+    setIsTyping(false);
   };
 
   const generateBotResponse = (userInput) => {
