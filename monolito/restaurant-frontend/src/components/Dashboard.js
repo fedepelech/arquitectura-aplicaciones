@@ -7,6 +7,7 @@ const Dashboard = () => {
   const [salesData, setSalesData] = useState(null);
   const [businessDay, setBusinessDay] = useState(null);
   const [closureStatus, setClosureStatus] = useState(null);
+  const [localLogs, setLocalLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -20,15 +21,15 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [salesResponse, businessResponse, closureResponse] = await Promise.all([
+      const [salesResponse, closureResponse, logsResponse] = await Promise.all([
         restaurantAPI.getSalesData(),
-        restaurantAPI.getBusinessDayStatus(),
-        restaurantAPI.getClosureStatus()
+        restaurantAPI.getClosureStatus(),
+        restaurantAPI.getLocalLogs(50)
       ]);
 
       setSalesData(salesResponse.data);
-      setBusinessDay(businessResponse.data);
       setClosureStatus(closureResponse.data);
+      setLocalLogs(logsResponse.data?.lines || []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -60,6 +61,16 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  // Visualización de logs
+  const renderLogs = () => (
+    <div className="dashboard-logs">
+      <h4>Últimos logs del sistema</h4>
+      <pre style={{ background: '#222', color: '#eee', padding: '1em', borderRadius: '6px', maxHeight: '200px', overflowY: 'auto' }}>
+        {localLogs.length > 0 ? localLogs.join('\n') : 'No hay logs disponibles.'}
+      </pre>
+    </div>
+  );
 
   return (
     <div className="dashboard">
