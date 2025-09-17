@@ -9,9 +9,11 @@ const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
 const app = express();
 app.use(cors({
   origin: 'http://localhost:3002',
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(bodyParser.json());
+
+app.options('*', cors());
 
 // MCP endpoint for proxies and chatbot
 app.post('/mcp', async (req, res) => {
