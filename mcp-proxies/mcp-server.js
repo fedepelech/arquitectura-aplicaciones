@@ -1,10 +1,16 @@
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 // Ollama integration
 const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
 
+
 const app = express();
+app.use(cors({
+  origin: 'http://localhost:3002',
+  credentials: true
+}));
 app.use(bodyParser.json());
 
 // MCP endpoint for proxies and chatbot

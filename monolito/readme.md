@@ -8,10 +8,10 @@ docker-compose up -d
 sleep 10
 
 # 4. Copiar el schema.sql al contenedor de postgres
-docker cp schema.sql monolito-postgres-1:/schema.sql
+docker cp monolito/schema.sql arquitectura-aplicaciones-db-1:/schema.sql
 
 # 5. Aplicar el schema dentro del contenedor de postgres
-docker-compose exec postgres psql -U postgres -d restaurant_poc -f /schema.sql
+docker-compose exec db psql -U postgres -d restaurant_poc -f /schema.sql
 
 # 6. Ejecutar el seed desde la API
-docker-compose exec restaurant-api npm run seed
+docker-compose exec monolito npm run seed
