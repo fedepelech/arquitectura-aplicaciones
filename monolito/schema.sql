@@ -1,9 +1,18 @@
--- schema.sql (versión corregida)
+-- Crear la base de datos
 CREATE DATABASE restaurant_poc;
 
 \c restaurant_poc;
+-- NO crear/eliminar la base de datos, solo trabajar con tablas
 
--- Tabla: Días de negocio del local
+-- Eliminar tablas existentes en orden inverso (por las FK)
+DROP TABLE IF EXISTS sales CASCADE;
+DROP TABLE IF EXISTS shift_close CASCADE;
+DROP TABLE IF EXISTS shifts CASCADE;
+DROP TABLE IF EXISTS tld_list_pos CASCADE;
+DROP TABLE IF EXISTS inventory CASCADE;
+DROP TABLE IF EXISTS tld CASCADE;
+
+-- Crear todas las tablas
 CREATE TABLE tld (
     id SERIAL PRIMARY KEY,
     business_date DATE NOT NULL UNIQUE,
@@ -17,7 +26,6 @@ CREATE TABLE tld (
     notes TEXT
 );
 
--- Tabla: Inventario simplificado
 CREATE TABLE inventory (
     id SERIAL PRIMARY KEY,
     item_name VARCHAR(100) NOT NULL,
@@ -30,7 +38,6 @@ CREATE TABLE inventory (
     status VARCHAR(20) DEFAULT 'active'
 );
 
--- Tabla: POS habilitadas por día
 CREATE TABLE tld_list_pos (
     id SERIAL PRIMARY KEY,
     tld_id INTEGER REFERENCES tld(id) ON DELETE CASCADE,
@@ -42,7 +49,6 @@ CREATE TABLE tld_list_pos (
     reason_disabled TEXT NULL
 );
 
--- Tabla: Turnos por POS
 CREATE TABLE shifts (
     id SERIAL PRIMARY KEY,
     tld_id INTEGER REFERENCES tld(id) ON DELETE CASCADE,
@@ -58,25 +64,23 @@ CREATE TABLE shifts (
     notes TEXT
 );
 
--- Tabla: Cierre de turno (CORREGIDA)
 CREATE TABLE shift_close (
     id SERIAL PRIMARY KEY,
     shift_id INTEGER REFERENCES shifts(id) ON DELETE CASCADE,
     closed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     closing_cash DECIMAL(10,2) NOT NULL,
-    cash_difference DECIMAL(10,2) DEFAULT 0.00,  -- ← SIN GENERATED
+    cash_difference DECIMAL(10,2) DEFAULT 0.00,
     transaction_count INTEGER DEFAULT 0,
     total_sales DECIMAL(10,2) DEFAULT 0.00,
     cash_tips DECIMAL(10,2) DEFAULT 0.00,
     card_sales DECIMAL(10,2) DEFAULT 0.00,
     discounts_applied DECIMAL(10,2) DEFAULT 0.00,
     voided_transactions INTEGER DEFAULT 0,
-    is_balanced BOOLEAN DEFAULT false,  -- ← SIN GENERATED
+    is_balanced BOOLEAN DEFAULT false,
     notes TEXT,
     closed_by VARCHAR(100)
 );
 
--- Tabla: Ventas
 CREATE TABLE sales (
     id SERIAL PRIMARY KEY,
     tld_id INTEGER REFERENCES tld(id) ON DELETE CASCADE,

@@ -1,9 +1,8 @@
 const axios = require("axios");
 exports.handler = async (event) => {
-  // Parse event body if present
-  const body = event && event.body ? JSON.parse(event.body) : {};
+  const monolitoUrl = process.env.MONOLITO_URL || 'http://monolito:3000';
   const resp = await axios.post(
-    "http://restaurant-api:3000/api/admin/force-close-shifts",
+    `${monolitoUrl}/api/admin/force-close-shifts`,
     null,
     { headers: { Authorization: `Bearer local-key-123` } }
   );

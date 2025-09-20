@@ -1,8 +1,9 @@
 const axios = require("axios");
+const monolitoUrl = process.env.MONOLITO_URL || 'http://monolito:3000';
 exports.handler = async (event) => {
   const { lines = 50 } = JSON.parse(event.body || event);
   const resp = await axios.get(
-    `http://restaurant-api:3000/api/logs/closure?lines=${lines}`,
+    `${monolitoUrl}/api/logs/closure?lines=${lines}`,
     { headers: { Authorization: `Bearer local-key-123` } }
   );
   return {

@@ -1,9 +1,10 @@
 const axios = require("axios");
+const monolitoUrl = process.env.MONOLITO_URL || 'http://monolito:3000';
 exports.handler = async (event) => {
   const body = JSON.parse(event.body || event);
   const businessDay = body.businessDay || 'today';
   const resp = await axios.get(
-    `http://restaurant-api:3000/api/closure-status/${businessDay}`,
+    `${monolitoUrl}/api/closure-status/${businessDay}`,
     { headers: { Authorization: `Bearer local-key-123` } }
   );
   // Asegura que el formato sea el esperado por el frontend
