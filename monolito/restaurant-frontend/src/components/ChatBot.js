@@ -43,10 +43,10 @@ const ChatBot = ({ onClose, onRefreshData }) => {
 		// Determinar la tool adecuada y validar que exista
 		const tool = getToolForPrompt(userMessage.text);
 		let payload = {};
-		switch (tool) {
-			case 'llm':
-				payload = { prompt: userMessage.text, model: 'llama2' };
-				break;
+			switch (tool) {
+				case 'llm':
+					payload = { prompt: `Responde SIEMPRE en español. ${userMessage.text}`, model: 'llama2' };
+					break;
 			case 'check_closure_status':
 				payload = { businessDay: 'today' };
 				break;
@@ -63,7 +63,6 @@ const ChatBot = ({ onClose, onRefreshData }) => {
 				payload = { businessDay: 'today' };
 				break;
 			default:
-				// Si la tool no existe, fallback a LLM
 				payload = { prompt: userMessage.text, model: 'llama2' };
 				break;
 		}
@@ -107,7 +106,23 @@ const ChatBot = ({ onClose, onRefreshData }) => {
 								botText = data?.data?.message || data?.message || 'Turnos cerrados.';
 								break;
 							default:
-								botText = JSON.stringify(data, null, 2);
+								if (tool === 'llm' && typeof data?.data === 'string') {
+									try {
+										const lines = data.data.split('\n').filter(Boolean);
+										const tokens = lines.map(line => {
+											try {
+												return JSON.parse(line).response || '';
+											} catch {
+												return '';
+											}
+										});
+										botText = tokens.join('');
+									} catch {
+										botText = data.data;
+									}
+								} else {
+									botText = JSON.stringify(data, null, 2);
+								}
 								break;
 						}
 			}

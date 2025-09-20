@@ -5,28 +5,22 @@ import './Dashboard.css';
 
 const Dashboard = () => {
   const [salesData, setSalesData] = useState(null);
-  const [businessDay, setBusinessDay] = useState(null);
   const [closureStatus, setClosureStatus] = useState(null);
   const [localLogs, setLocalLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [showChat, setShowChat] = useState(false);
 
-  useEffect(() => {
-    loadDashboardData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(loadDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+
 
   const loadDashboardData = async () => {
+    setLoading(true);
     try {
       const [salesResponse, closureResponse, logsResponse] = await Promise.all([
         restaurantAPI.getSalesData(),
         restaurantAPI.getClosureStatus(),
         restaurantAPI.getLocalLogs(50)
       ]);
-
       setSalesData(salesResponse.data);
       setClosureStatus(closureResponse.data);
       setLocalLogs(logsResponse.data?.lines || []);
@@ -50,6 +44,10 @@ const Dashboard = () => {
       setClosing(false);
     }
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
   if (loading) {
     return (
@@ -78,11 +76,12 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <div className="header-content">
           <h1>🍽️ Restaurant Manager</h1>
+          {/* Eliminado botón de recarga manual */}
           <div className="header-info">
-            <span className="local-id">{businessDay?.localId}</span>
-            <span className="business-date">{businessDay?.businessDate}</span>
-            <span className={`status ${businessDay?.status}`}>
-              {businessDay?.status === 'open' ? '🟢 ABIERTO' : '🔴 CERRADO'}
+            <span className="local-id">{closureStatus?.localId}</span>
+            <span className="business-date">{closureStatus?.businessDate}</span>
+            <span className={`status ${closureStatus?.details?.businessDay?.status}`}>
+              {closureStatus?.details?.businessDay?.status === 'open' ? '🟢 ABIERTO' : '🔴 CERRADO'}
             </span>
           </div>
         </div>
@@ -176,23 +175,23 @@ const Dashboard = () => {
           </div>
           <div className="card-content">
             <button 
-              className={`close-day-btn ${businessDay?.status === 'closed' ? 'disabled' : ''}`}
+              className={`close-day-btn ${closureStatus?.details?.businessDay?.status === 'closed' ? 'disabled' : ''}`}
               onClick={handleCloseDay}
-              disabled={closing || businessDay?.status === 'closed'}
+              disabled={closing || closureStatus?.details?.businessDay?.status === 'closed'}
             >
               {closing ? (
                 <>
                   <span className="spinner small"></span>
                   Cerrando día...
                 </>
-              ) : businessDay?.status === 'closed' ? (
+              ) : closureStatus?.details?.businessDay?.status === 'closed' ? (
                 '✅ Día ya cerrado'
               ) : (
                 '🔒 Cerrar Día de Negocio'
               )}
             </button>
             <p className="action-hint">
-              {businessDay?.status === 'closed' 
+              {closureStatus?.details?.businessDay?.status === 'closed' 
                 ? 'El día de negocio ha sido cerrado exitosamente'
                 : 'Cierra el día de negocio cuando hayas completado todas las operaciones'
               }
@@ -219,6 +218,6 @@ const Dashboard = () => {
       )}
     </div>
   );
-};
+}
 
 export default Dashboard;
