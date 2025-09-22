@@ -18,6 +18,17 @@ docker-compose exec monolito npm run seed
 # 7. Descargar el modelo LLM recomendado
 docker compose exec ollama ollama pull llama3.2:3b-instruct-q4_K_M
 
+
+
+
+
+
+
+
+
+
+
+# NO SON COMANDOS
 ## Notas de rendimiento LLM
 - El servicio `mcp-server` está configurado para usar por defecto `LLM_MODEL=llama3.2:3b-instruct-q4_K_M`, `LLM_KEEP_ALIVE=1h`, `LLM_NUM_PREDICT=256` y `LLM_NUM_THREAD` configurable.
 - Al iniciar, el MCP precalienta el modelo automáticamente para evitar la latencia del primer uso.
