@@ -27,6 +27,49 @@ app.use(cors({
 app.use(express.json()); 
 app.options('*', cors());
 
+async function warmUpLLM() {
+  const maxAttempts = parseInt(process.env.LLM_WARMUP_ATTEMPTS || '8', 10);
+  const delayMs = parseInt(process.env.LLM_WARMUP_DELAY_MS || '2000', 10);
+  const warmOptions = { num_predict: 8 };
+  if (DEFAULT_NUM_THREAD) warmOptions.num_thread = DEFAULT_NUM_THREAD;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await axios.post(`${ollamaUrl}/api/generate`, {
+        model: DEFAULT_LLM_MODEL,
+        prompt: 'ok',
+        stream: false,
+        keep_alive: DEFAULT_KEEP_ALIVE,
+        options: warmOptions
+      });
+      console.log(`[LLM] Modelo precalentado: ${DEFAULT_LLM_MODEL} (keep_alive=${DEFAULT_KEEP_ALIVE})`);
+      return;
+    } catch (e) {
+      const status = e?.response?.status;
+      const data = e?.response?.data;
+      const str = typeof data === 'string' ? data : JSON.stringify(data || {});
+      const isModelMissing = status === 404 || /model/i.test(str) || /not found|no such model/i.test(str);
+
+      if (isModelMissing) {
+        try {
+          console.log(`[LLM] Modelo no encontrado. Intentando pull: ${DEFAULT_LLM_MODEL} ...`);
+          await axios.post(`${ollamaUrl}/api/pull`, { name: DEFAULT_LLM_MODEL, stream: false });
+          console.log('[LLM] Pull completado. Reintentando warm-up...');
+        } catch (pullErr) {
+          console.warn('[LLM] Falló el pull del modelo:', pullErr?.message || pullErr);
+        }
+      } else {
+        console.warn(`[LLM] Warm-up intento ${attempt}/${maxAttempts} falló:`, e?.message || status);
+      }
+
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  console.warn('[LLM] Warm-up no pudo completarse tras múltiples intentos. Continuando sin precalentamiento.');
+}
+
 // --- Intent detection for action tools from natural language prompts ---
 function detectActionFromPrompt(promptRaw) {
   if (!promptRaw) return null;
@@ -386,21 +429,6 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`MCP server running on port ${PORT}`);
-  // Precalentar el modelo para evitar latencia de primer uso
-  setTimeout(async () => {
-    try {
-      const warmOptions = { num_predict: 8 };
-      if (DEFAULT_NUM_THREAD) warmOptions.num_thread = DEFAULT_NUM_THREAD;
-      await axios.post(`${ollamaUrl}/api/generate`, {
-        model: DEFAULT_LLM_MODEL,
-        prompt: 'ok',
-        stream: false,
-        keep_alive: DEFAULT_KEEP_ALIVE,
-        options: warmOptions
-      });
-      console.log(`[LLM] Modelo precalentado: ${DEFAULT_LLM_MODEL} (keep_alive=${DEFAULT_KEEP_ALIVE})`);
-    } catch (e) {
-      console.warn('[LLM] No se pudo precalentar el modelo en el arranque:', e?.message || e);
-    }
-  }, 1000);
+  // Precalentar el modelo con reintentos y auto-pull para evitar latencia y 404 en primer arranque
+  setTimeout(() => { warmUpLLM().catch(() => {}); }, 1000);
 });
