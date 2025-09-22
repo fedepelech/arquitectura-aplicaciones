@@ -464,6 +464,37 @@ app.put('/api/admin/pos/:posId/status', async (req, res) => {
   }
 });
 
+// 6.bis. OPEN BUSINESS DAY - Crear día de negocio si no existe
+app.post('/api/admin/open-business-day/:date', async (req, res) => {
+  const { date } = req.params;
+  try {
+    const actualDate = date === 'today' ? new Date().toISOString().split('T')[0] : date;
+    const existing = await pool.query('SELECT * FROM tld WHERE business_date = $1', [actualDate]);
+    if (existing.rows.length > 0) {
+      return res.json({
+        message: 'Business day already exists',
+        businessDate: actualDate,
+        status: existing.rows[0].status,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const created = await pool.query(
+      'INSERT INTO tld (business_date, status, max_allowed_difference) VALUES ($1, $2, $3) RETURNING *',
+      [actualDate, 'open', 50.00]
+    );
+
+    return res.json({
+      message: 'Business day opened',
+      businessDay: created.rows[0],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[OPEN-BUSINESS-DAY] Error:', error);
+    return res.status(500).json({ error: 'Database error', message: error.message });
+  }
+});
+
 // =============================================================================
 // ENDPOINT DE CIERRE DE DÍA (SIMULACIÓN REAL)
 // =============================================================================

@@ -14,11 +14,12 @@ const api = axios.create({
 
 export const restaurantAPI = {
   // Solo el ChatBot usa MCP
-  askLLM: async (prompt, model = 'llama2') => {
+  askLLM: async (prompt) => {
     try {
-      const resp = await api.post('/mcp', {
+      const mcpBase = process.env.REACT_APP_MCP_URL || 'http://localhost:4000';
+      const resp = await axios.post(`${mcpBase}/mcp`, {
         tool: 'llm',
-        payload: { prompt, model }
+        payload: { prompt }
       });
       return resp;
     } catch (err) {
@@ -45,7 +46,7 @@ export const restaurantAPI = {
   },
   closeBusinessDay: async (force = false) => {
     try {
-      const resp = await api.post('/api/close-day', { date: 'today', forceClosure: force });
+      const resp = await api.post('/api/business-day/close/today', { forceClosure: force });
       return resp;
     } catch (err) {
       throw err;

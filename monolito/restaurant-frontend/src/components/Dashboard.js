@@ -49,16 +49,8 @@ const Dashboard = () => {
     loadDashboardData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="dashboard loading">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Cargando datos del restaurante...</p>
-        </div>
-      </div>
-    );
-  }
+  // Evitar desmontar todo el dashboard (y el ChatBot). En lugar de retornar temprano,
+  // mostramos un overlay de carga sobre el contenido para preservar el estado del chat.
 
   // Visualización de logs
   const renderLogs = () => (

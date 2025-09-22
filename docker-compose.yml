@@ -24,6 +24,10 @@ services:
     environment:
       - MONOLITO_URL=http://monolito:3000
       - OLLAMA_URL=http://ollama:11434
+      - LLM_MODEL=llama3.2:3b-instruct-q4_K_M
+      - LLM_KEEP_ALIVE=1h
+      - LLM_NUM_PREDICT=512
+      - LLM_NUM_THREAD=4
     depends_on:
       - monolito
       - ollama
