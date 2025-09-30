@@ -112,8 +112,6 @@ const ChatBot = ({ onClose, onRefreshData }) => {
         { label: "Ver estado del día de negocio", text: "Ver estado del día de negocio" },
         { label: "Procesar transacciones pendientes", text: "Procesar transacciones pendientes" },
         { label: "Cerrar turnos abiertos", text: "Cerrar turnos abiertos" },
-        { label: "Ver logs del sistema", text: "Ver logs del sistema" },
-        { label: "Cerrar el día", text: "Cerrar el día" },
         { label: "Forzar cierre del día", text: "Forzar cierre del día" }
     ];
 

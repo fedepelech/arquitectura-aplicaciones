@@ -370,7 +370,46 @@ app.post('/api/admin/force-close-shifts', async (req, res) => {
   
   try {
     await client.query('BEGIN');
-    
+    // 0) Asegurar que cada POS habilitada tenga al menos un turno para el día actual.
+    //    Si no lo tiene, crear un turno ya cerrado con valores en cero para remover el bloqueo
+    //    "POS habilitada sin turnos" en el estado de cierre.
+    const todayStr = new Date().toISOString().split('T')[0];
+    let todayTldId;
+    const tldToday = await client.query('SELECT id FROM tld WHERE business_date = $1', [todayStr]);
+    if (tldToday.rows.length === 0) {
+      const created = await client.query(
+        'INSERT INTO tld (business_date, status, max_allowed_difference) VALUES ($1, $2, $3) RETURNING id',
+        [todayStr, 'open', 50.00]
+      );
+      todayTldId = created.rows[0].id;
+    } else {
+      todayTldId = tldToday.rows[0].id;
+    }
+
+    const posMissing = await client.query(`
+      SELECT tlp.id AS pos_id
+      FROM tld_list_pos tlp
+      LEFT JOIN shifts s ON s.pos_id = tlp.id
+      WHERE tlp.tld_id = $1 AND tlp.is_enabled = true AND s.id IS NULL
+    `, [todayTldId]);
+
+    const autoClosedShifts = [];
+    for (const row of posMissing.rows) {
+      const startTime = new Date();
+      const endTime = new Date();
+      const inserted = await client.query(`
+        INSERT INTO shifts (tld_id, pos_id, shift_number, employee_name, employee_id, start_time, status, opening_cash, expected_cash, end_time)
+        VALUES ($1, $2, $3, $4, $5, $6, 'closed', $7, $8, $9)
+        RETURNING id
+      `, [todayTldId, row.pos_id, 1, 'SYSTEM AUTO', 'AUTO', startTime, 0, 0, endTime]);
+      const shiftId = inserted.rows[0].id;
+      await client.query(`
+        INSERT INTO shift_close (shift_id, closing_cash, cash_difference, transaction_count, total_sales, closed_by)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [shiftId, 0, 0, 0, 0, 'SYSTEM_AUTO']);
+      autoClosedShifts.push({ shiftId, posId: row.pos_id, created: true });
+    }
+
     // Obtener turnos abiertos
     const openShiftsResult = await client.query(
       'SELECT * FROM shifts WHERE status = $1',
@@ -421,8 +460,9 @@ app.post('/api/admin/force-close-shifts', async (req, res) => {
     await client.query('COMMIT');
     
     res.json({
-      message: `Force closed ${closedShifts.length} shifts`,
+      message: `Force closed ${closedShifts.length} shifts` + (autoClosedShifts.length ? ` and auto-created/closed ${autoClosedShifts.length} shifts for enabled POS without shifts` : ''),
       closedShifts: closedShifts,
+      autoClosedShifts,
       timestamp: new Date().toISOString()
     });
     
